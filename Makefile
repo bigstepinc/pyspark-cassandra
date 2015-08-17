@@ -27,10 +27,7 @@ test-java:
 
 
 
-test-integration: \
-	test-integration-setup \
-	test-integration-matrix \	
-	test-integration-teardown
+test-integration: test-integration-setup test-integration-matrix test-integration-teardown
 
 install-venv:
 	test -d venv || virtualenv venv
@@ -52,11 +49,7 @@ test-integration-setup: start-cassandra
 
 test-integration-teardown: stop-cassandra
 	
-test-integration-matrix:  install-cassandra-driver \
-	test-integration-spark-1.2.1 \
-	test-integration-spark-1.2.2 \
-	test-integration-spark-1.3.0 \
-	test-integration-spark-1.3.1
+test-integration-matrix:  install-cassandra-driver test-integration-spark-1.2.1 test-integration-spark-1.2.2 test-integration-spark-1.3.0 test-integration-spark-1.3.1
 
 test-travis: install-cassandra-driver
 	$(call test-integration-for-version,$$SPARK_VERSION)
