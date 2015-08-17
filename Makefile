@@ -34,6 +34,7 @@ install-venv:
 	
 install-cassandra-driver: install-venv
 	venv/bin/pip install cassandra-driver
+	venv/bin/pip install unittest2
 	
 install-ccm: install-venv
 	venv/bin/pip install ccm

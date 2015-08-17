@@ -2,7 +2,14 @@ from datetime import datetime
 from decimal import Decimal
 import string
 import sys
-import unittest
+
+if sys.version_info >= (2, 7):
+	import unittest
+	from unittest import TestCase
+else:
+	import unittest2
+	from unittest2 import TestCase
+
 import uuid
 
 from cassandra.cluster import Cluster
@@ -12,33 +19,26 @@ from pyspark import SparkConf
 from pyspark_cassandra import CassandraSparkContext, RowFormat, Row, UDT, WriteConf
 
 
-class CassandraTestCase(unittest.TestCase):
+class CassandraTestCase(TestCase):
     keyspace = "test_pyspark_cassandra"
-    sc = None
-    session = None
+
     @classmethod
     def setUpClass(cls):
-	if sys.version_info >= (2, 7):
-	        super(CassandraTestCase, cls).setUpClass()
-	if  CassandraTestCase.sc is None:
-        	CassandraTestCase.sc = CassandraSparkContext(conf=SparkConf().setAppName("PySpark Cassandra Test"))
-        	CassandraTestCase.session = Cluster(protocol_version=3).connect()
-		CassandraTestCase.session.execute('''
-		    CREATE KEYSPACE IF NOT EXISTS test_pyspark_cassandra
-		    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
-		''')
-		CassandraTestCase.session.set_keyspace('test_pyspark_cassandra')
+        super(CassandraTestCase, cls).setUpClass()
+        cls.sc = CassandraSparkContext(conf=SparkConf().setAppName("PySpark Cassandra Test"))
+        cls.session = Cluster(protocol_version=3).connect()
+        cls.session.execute('''
+            CREATE KEYSPACE IF NOT EXISTS test_pyspark_cassandra
+            WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+        ''')
+        cls.session.set_keyspace('test_pyspark_cassandra')
 
 
     @classmethod
     def tearDownClass(cls):
-	if sys.version_info >= (2, 7):
-	        super(CassandraTestCase, cls).setUpClass()
-        	CassandraTestCase.session.shutdown()
-        	CassandraTestCase.sc.stop()
-
-  
-
+        super(CassandraTestCase, cls).tearDownClass()
+        cls.session.shutdown()
+        cls.sc.stop()
 
 
 class SimpleTypesTest(CassandraTestCase):
@@ -53,7 +53,7 @@ class SimpleTypesTest(CassandraTestCase):
     @classmethod
     def setUpClass(cls):
         super(SimpleTypesTest, cls).setUpClass()
-        CassandraTestCase.session.execute('''
+       	cls.session.execute('''
             CREATE TABLE IF NOT EXISTS simple_types (
                 key text primary key, %s
             )
@@ -61,19 +61,13 @@ class SimpleTypesTest(CassandraTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        CassandraTestCase.session.execute('DROP TABLE simple_types')
-        super(SimpleTypesTest, cls).tearDownClass()
+        cls.session.execute('DROP TABLE simple_types')
+# 	super(SimpleTypesTest, cls).tearDownClass()
 
     def setUp(self):
         super(SimpleTypesTest, self).setUp()
-	if sys.version_info < (2, 7):
-		self.setUpClass()	
-
         self.session.execute('TRUNCATE simple_types')
 
-    def tearDown(self):
-	if sys.version_info < (2, 7):
-		self.tearDownClass()	
 
     def simple_type_rdd(self, type_name):
         return (
@@ -141,7 +135,6 @@ class SimpleTypesTest(CassandraTestCase):
     def test_uuid(self):
         self.read_write_test('uuid', uuid.UUID('22dadfd0-b971-11e4-a856-85a08dca5bbf'))
 
-
 class CollectionTypesTest(CassandraTestCase):
     table = "collection_types"
     collection_types = {
@@ -153,7 +146,7 @@ class CollectionTypesTest(CassandraTestCase):
     @classmethod
     def setUpClass(cls):
         super(CollectionTypesTest, cls).setUpClass()
-        CassandraTestCase.session.execute('''
+        cls.session.execute('''
             CREATE TABLE IF NOT EXISTS %s (
                 key text primary key, %s
             )
@@ -166,8 +159,6 @@ class CollectionTypesTest(CassandraTestCase):
 
     def setUp(self):
         super(CollectionTypesTest, self).setUp()
-	if sys.version_info < (2, 7):
-		self.setUpClass()	
         self.session.execute('TRUNCATE %s' % self.table)
 
     def test_map(self):
@@ -179,7 +170,7 @@ class CollectionTypesTest(CassandraTestCase):
         ]
 
         maps_by_key = dict(
-            (m['key'] , m['m'])
+           ( m['key'] , m['m'])
             for m in maps
         )
 
@@ -196,8 +187,13 @@ class CollectionTypesTest(CassandraTestCase):
         for row in collected:
             self.assertEqual(maps_by_key[row.key], row.m)
 
+
+
 if __name__ == '__main__':
-    unittest.main()
+	if sys.version_info >= (2, 7):
+    		unittest.main()
+	else:
+    		unittest2.main()
 
 # session.execute('''
 #     CREATE TABLE IF NOT EXISTS counter (
