@@ -53,7 +53,7 @@ class SimpleTypesTest(CassandraTestCase):
     @classmethod
     def setUpClass(cls):
         super(SimpleTypesTest, cls).setUpClass()
-       	cls.session.execute('''
+        cls.session.execute('''
             CREATE TABLE IF NOT EXISTS simple_types (
                 key text primary key, %s
             )
@@ -62,7 +62,7 @@ class SimpleTypesTest(CassandraTestCase):
     @classmethod
     def tearDownClass(cls):
         cls.session.execute('DROP TABLE simple_types')
-# 	super(SimpleTypesTest, cls).tearDownClass()
+        super(SimpleTypesTest, cls).tearDownClass()
 
     def setUp(self):
         super(SimpleTypesTest, self).setUp()
