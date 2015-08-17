@@ -33,7 +33,7 @@ def _create_udt(fields, values):
 	return _create_struct(UDT, fields, values)
 
 def _create_struct(cls, fields, values):
-	d = [lambda k: v for k, v in zip(fields, values)]
+	d = dict((k, v) for k, v in zip(fields, values))
 	return cls(**d)
 
 
@@ -85,7 +85,7 @@ class Struct(tuple):
 		return self.__class__(**d)
 
 	def __sub__(self, other):
-		d = lambda k: [ v for k, v in self.__FIELDS__.items() if k in other ]
+		d = dict( (v,v) for k, v in self.__FIELDS__.items() if k in other )
 		return self.__class__(**d)
 
 	
@@ -167,7 +167,7 @@ def _create_spanning_dataframe(cnames, ctypes, cvalues):
 	# otherwise use lists	
 	global np
 	convert = _to_nparrays if np else _to_list
-	arrays =  lambda n :[ convert(t, v) for n, t, v in zip(cnames, ctypes, cvalues) ]
+	arrays =  dict((n, convert(t, v)) for n, t, v in zip(cnames, ctypes, cvalues) )
 	
 	# if pandas is available, provide the arrays / lists as DataFrame
 	# otherwise use pyspark_cassandra.Row

@@ -48,21 +48,17 @@ start-cassandra: install-ccm
 stop-cassandra:
 	venv/bin/ccm remove --config-dir=./.ccm
 
-test-integration-setup: \
-	start-cassandra
+test-integration-setup: start-cassandra
 
-test-integration-teardown:
-	stop-cassandra
+test-integration-teardown: stop-cassandra
 	
-test-integration-matrix: \
-	install-cassandra-driver \
+test-integration-matrix:  install-cassandra-driver \
 	test-integration-spark-1.2.1 \
 	test-integration-spark-1.2.2 \
 	test-integration-spark-1.3.0 \
 	test-integration-spark-1.3.1
 
-test-travis: \
-  install-cassandra-driver
+test-travis: install-cassandra-driver
 	$(call test-integration-for-version,$$SPARK_VERSION)
 
 test-integration-spark-1.2.1:
@@ -82,14 +78,14 @@ define test-integration-for-version
 		(pushd lib && curl http://ftp.tudelft.nl/apache/spark/spark-$1/spark-$1-bin-hadoop2.4.tgz | tar xz && popd)
 	
 	cp log4j.properties lib/spark-$1-bin-hadoop2.4/conf/
-
 	source venv/bin/activate ; \
+		export PYTHON_VERSION=`python -V 2>&1| awk '{split($$2,a,".");print a[1] "." a[2]}'`; \
 		lib/spark-$1-bin-hadoop2.4/bin/spark-submit \
 			--master local[*] \
 			--driver-memory 256m \
 			--conf spark.cassandra.connection.host="localhost" \
 			--jars target/pyspark_cassandra-0.1.5.jar \
-			--py-files target/pyspark_cassandra-0.1.5-py2.7.egg \
+			--py-files target/pyspark_cassandra-0.1.5-py$${PYTHON_VERSION}.egg \
 			src/test/python/pyspark_cassandra/it_suite.py
 endef
 

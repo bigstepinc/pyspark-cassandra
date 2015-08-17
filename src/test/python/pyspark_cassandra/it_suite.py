@@ -14,24 +14,31 @@ from pyspark_cassandra import CassandraSparkContext, RowFormat, Row, UDT, WriteC
 
 class CassandraTestCase(unittest.TestCase):
     keyspace = "test_pyspark_cassandra"
-
+    sc = None
+    session = None
     @classmethod
     def setUpClass(cls):
-        super(CassandraTestCase, cls).setUpClass()
-        cls.sc = CassandraSparkContext(conf=SparkConf().setAppName("PySpark Cassandra Test"))
-        cls.session = Cluster().connect()
-        cls.session.execute('''
-            CREATE KEYSPACE IF NOT EXISTS test_pyspark_cassandra
-            WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
-        ''')
-        cls.session.set_keyspace('test_pyspark_cassandra')
+	if sys.version_info >= (2, 7):
+	        super(CassandraTestCase, cls).setUpClass()
+	if  CassandraTestCase.sc is None:
+        	CassandraTestCase.sc = CassandraSparkContext(conf=SparkConf().setAppName("PySpark Cassandra Test"))
+        	CassandraTestCase.session = Cluster(protocol_version=3).connect()
+		CassandraTestCase.session.execute('''
+		    CREATE KEYSPACE IF NOT EXISTS test_pyspark_cassandra
+		    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+		''')
+		CassandraTestCase.session.set_keyspace('test_pyspark_cassandra')
 
 
     @classmethod
     def tearDownClass(cls):
-        super(CassandraTestCase, cls).tearDownClass()
-        cls.session.shutdown()
-        cls.sc.stop()
+	if sys.version_info >= (2, 7):
+	        super(CassandraTestCase, cls).setUpClass()
+        	cls.session.shutdown()
+        	cls.sc.stop()
+
+  
+
 
 
 class SimpleTypesTest(CassandraTestCase):
@@ -59,8 +66,14 @@ class SimpleTypesTest(CassandraTestCase):
 
     def setUp(self):
         super(SimpleTypesTest, self).setUp()
+	if sys.version_info < (2, 7):
+		self.setUpClass()	
+
         self.session.execute('TRUNCATE simple_types')
 
+    def tearDown(self):
+	if sys.version_info < (2, 7):
+		self.tearDownClass()	
 
     def simple_type_rdd(self, type_name):
         return (
@@ -92,7 +105,7 @@ class SimpleTypesTest(CassandraTestCase):
         self.read_write_test('boolean', False)
 
     def test_decimal(self):
-        self.read_write_test('decimal', Decimal(0.5))
+        self.read_write_test('decimal', Decimal(str(0.5)))
 
     def test_double(self):
         self.read_write_test('double', 0.5)
@@ -153,20 +166,22 @@ class CollectionTypesTest(CassandraTestCase):
 
     def setUp(self):
         super(CollectionTypesTest, self).setUp()
+	if sys.version_info < (2, 7):
+		self.setUpClass()	
         self.session.execute('TRUNCATE %s' % self.table)
 
     def test_map(self):
         maps = [
             {
                 'key': 'm%s' % i,
-                'm': { k : 'x' for k in string.ascii_lowercase[:i] }
+                'm': dict( (k , 'x') for k in string.ascii_lowercase[:i] )
             } for i in range(1, 10)
         ]
 
-        maps_by_key = {
-            m['key'] : m['m']
+        maps_by_key = dict(
+            (m['key'] , m['m'])
             for m in maps
-        }
+        )
 
         # requires no. partitions to equal the no. elements in maps
         # PickleRowWriter.unpickle(...) doesn't accept batched unpickling just yet

@@ -155,7 +155,7 @@ class SpanningRDD(RDD):
 		def spanning_iterator(partition):
 			def key_by(columns):
 				for row in partition:
-					k = Row(lambda c: [ row.__getattr__(c) for c in columns])
+					k = Row(**dict((c, row.__getattr__(c)) for c in columns))	
 					for c in columns:
 						del row[c]
 					
